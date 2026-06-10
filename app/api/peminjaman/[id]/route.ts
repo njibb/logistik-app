@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+export const dynamic = 'force-dynamic';
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Akses Ditolak" }, { status: 401 });

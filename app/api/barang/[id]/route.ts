@@ -3,13 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+// MANTRA ANTI-ERROR BUILD: Kasih tau Next.js ini file dinamis, jangan di-build statis!
+export const dynamic = 'force-dynamic';
+
 // FUNGSI UPDATE DATA (PUT)
 export async function PUT(req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Akses Ditolak" }, { status: 401 });
 
   try {
-    // FIX NEXT.JS 15: Params harus di-await
     const params = await context.params;
     const id = params.id;
     
@@ -38,7 +40,6 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
   if (!session) return NextResponse.json({ error: "Akses Ditolak" }, { status: 401 });
 
   try {
-    // FIX NEXT.JS 15: Params harus di-await
     const params = await context.params;
     const id = params.id;
 
