@@ -33,6 +33,9 @@ export default function NavbarUser() {
           <div className="hidden md:flex items-center gap-6">  
             {session ? (
               <div className="flex items-center gap-4 pl-6 border-l border-gray-200">
+                <Link href="/belanja" onClick={() => setIsMobileMenuOpen(false)} className="text-base font-bold text-slate-700">
+                  Daftar Belanja
+                </Link>
                 <Link href="/inventaris" className="text-sm font-bold text-orange-600 bg-orange-50 px-4 py-2 rounded-xl hover:bg-orange-100 transition-colors border border-orange-100">
                   + Tambah Barang
                 </Link>
