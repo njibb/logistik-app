@@ -43,10 +43,19 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
     const params = await context.params;
     const id = params.id;
 
+    // LANGKAH 1: Hapus semua riwayat peminjaman yang nyangkut sama barang ini dulu
+    await prisma.peminjaman.deleteMany({
+      where: { 
+        barangId: id 
+      }
+    });
+
+    // LANGKAH 2: Setelah riwayat bersih, baru barang aslinya dihapus
     await prisma.barang.delete({
       where: { id: id }
     });
-    return NextResponse.json({ success: true, pesan: "Data berhasil dihapus!" });
+    
+    return NextResponse.json({ success: true, pesan: "Data beserta riwayatnya berhasil dihapus!" });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error(error);

@@ -3,12 +3,39 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { revalidatePath } from 'next/cache'; // TAMBAHAN PENTING: Buat auto-refresh halaman
 
 // MANTRA ANTI-ERROR BUILD
 export const dynamic = 'force-dynamic';
 
 export default async function DaftarBelanjaPage() {
   const session = await getServerSession(authOptions);
+
+  // --- SERVER ACTIONS: Fungsi Sakti Pengganti API ---
+ // 1. Fungsi Edit Status (Tandai Sudah Dibeli)
+  async function markAsBought(formData: FormData) {
+    "use server";
+    const id = formData.get("id");
+    if (id) {
+      await prisma.daftarBelanja.update({
+        where: { id: String(id) }, // <--- Ganti di sini
+        data: { status: "DIBELI" }
+      });
+      revalidatePath("/", "layout"); // Refresh data tabel otomatis
+    }
+  }
+
+  // 2. Fungsi Hapus Data Pengajuan
+  async function deleteItem(formData: FormData) {
+    "use server";
+    const id = formData.get("id");
+    if (id) {
+      await prisma.daftarBelanja.delete({
+        where: { id: String(id) } // <--- Ganti di sini juga
+      });
+      revalidatePath("/", "layout"); // Refresh data tabel otomatis
+    }
+  }
 
   // 1. FIX ERROR createdAt: Kita ganti urutannya berdasarkan 'id' yang udah pasti ada di tabel
   const daftarBelanja = await prisma.daftarBelanja.findMany({
@@ -98,7 +125,9 @@ export default async function DaftarBelanjaPage() {
                   <th className="px-5 py-4 font-bold">Jumlah</th>
                   <th className="px-5 py-4 font-bold">Estimasi Harga</th>
                   <th className="px-5 py-4 font-bold max-w-[200px]">Alasan Kebutuhan</th>
-                  <th className="px-5 py-4 rounded-r-lg font-bold">Status</th>
+                  <th className={`px-5 py-4 font-bold ${!session ? 'rounded-r-lg' : ''}`}>Status</th>
+                  {/* Kolom Aksi hanya tampil kalau ada session */}
+                  {session && <th className="px-5 py-4 rounded-r-lg font-bold text-center">Aksi</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -107,7 +136,6 @@ export default async function DaftarBelanjaPage() {
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       <td className="px-5 py-4 font-bold text-slate-800">{item.nama_barang}</td>
                       <td className="px-5 py-4 text-slate-600 font-medium">{item.jumlah} Unit</td>
-                      {/* FIX ERROR ESTIMASI HARGA: Ditambahin || 0 biar kalau null jadi nol */}
                       <td className="px-5 py-4 font-bold text-orange-600">{formatRupiah(item.estimasi_harga || 0)}</td>
                       <td className="px-5 py-4 text-slate-500 truncate max-w-[200px]" title={item.alasan || "-"}>
                         {item.alasan || "-"}
@@ -119,11 +147,36 @@ export default async function DaftarBelanjaPage() {
                           {item.status}
                         </span>
                       </td>
+                      
+                      {/* Eksekusi Tombol Edit & Hapus (Menggunakan Form) */}
+                      {session && (
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Tombol Beli cuma ada kalau statusnya belum dibeli */}
+                            {item.status === 'DIAJUKAN' && (
+                              <form action={markAsBought}>
+                                <input type="hidden" name="id" value={item.id} />
+                                <button type="submit" className="bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                  ✔ Beli
+                                </button>
+                              </form>
+                            )}
+                            
+                            {/* Tombol Hapus */}
+                            <form action={deleteItem}>
+                              <input type="hidden" name="id" value={item.id} />
+                              <button type="submit" className="bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                🗑 Hapus
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-5 py-12 text-center">
+                    <td colSpan={session ? 6 : 5} className="px-5 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <svg className="w-12 h-12 text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                         <p className="text-slate-500 font-medium">Belum ada daftar barang yang perlu dibeli.</p>

@@ -58,3 +58,32 @@ export async function GET() {
     return NextResponse.json({ error: "Gagal memuat barang" }, { status: 500 });
   }
 }
+
+// --- FUNGSI DELETE: Untuk Menghapus Barang ---
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ error: "Akses Ditolak. Silakan login!" }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "ID barang tidak ditemukan" }, { status: 400 });
+    }
+
+    // Menghapus data barang berdasarkan ID (dikonversi ke Number agar tidak error di Prisma)
+   await prisma.barang.delete({
+      where: {
+        id: id
+      }
+    });
+
+    return NextResponse.json({ success: true, pesan: "Data barang berhasil dihapus!" });
+  } catch (error) {
+    console.error("Error hapus barang:", error);
+    return NextResponse.json({ error: "Gagal menghapus data. Pastikan barang ini tidak sedang dipinjam." }, { status: 500 });
+  }
+}
